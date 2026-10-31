@@ -1,80 +1,60 @@
-# QuickNotes API Design
+**API Endpoints**
+1. **GET /notes** - Retrieves a list of all notes for the authenticated user.
+2. **GET /notes/{id}** - Retrieves the details of a specific note.
+3. **POST /notes** - Creates a new note.
+4. **PUT /notes/{id}** - Updates an existing note.
+5. **DELETE /notes/{id}** - Deletes a specific note.
+6. **GET /tags** - Retrieves a list of all available tags for categorization.
 
-This document outlines the RESTful API endpoints for the QuickNotes backend. The design incorporates scalable patterns to handle read-heavy workloads and asynchronous processing.
+**Standardized Error Status Codes & Sample Payloads**
+Client applications must handle the following standard HTTP error responses gracefully. All errors return a standardized JSON payload structure:
 
-## Base URL
-`https://api.quicknotes.com/v1`
-
----
-
-## 1. Retrieve Notes
-**GET** `/notes`
-
-Fetches a list of the user's notes. 
-*System Design Note:* To handle high peak read queries, this endpoint prioritizes fetching from a Redis caching layer or database read replicas. Due to eventual consistency, clients should account for minor replica lag immediately following a write operation.
-
-**Query Parameters:**
-* `search` (string) - Filters notes by text content.
-* `category` (string) - Filters notes by category.
-
-**Response: `200 OK`**
+**400 Bad Request**
+Returned when the request is malformed or missing required fields (e.g., missing a note title).
 ```json
 {
-  "data": [
-    {
-      "id": "1698745200000",
-      "text": "Meeting notes regarding system architecture.",
-      "category": "Work",
-      "timestamp": 1698745200000
-    }
-  ],
-  "meta": {
-    "total_count": 1
-  }
+  "error": "Bad Request",
+  "status": 400,
+  "message": "The 'title' field is required."
 }
 ```
 
-## 2. Create Note
-**POST** `/notes`
-
-Creates a new note. Writes are routed directly to the primary database to ensure durability before asynchronously updating the read replicas and cache.
-
-**Request Body:**
+**401 Unauthorized**
+Returned when the user is not authenticated or their session has expired.
 ```json
 {
-  "text": "Meeting notes regarding system architecture.",
-  "category": "Work"
+  "error": "Unauthorized",
+  "status": 401,
+  "message": "Missing or invalid authentication token."
 }
 ```
 
-**Response: `201 Created`**
+**403 Forbidden**
+Returned when the user is authenticated but does not have permission to access the requested resource.
 ```json
 {
-  "id": "1698745200000",
-  "text": "Meeting notes regarding system architecture.",
-  "category": "Work",
-  "timestamp": 1698745200000
+  "error": "Forbidden",
+  "status": 403,
+  "message": "You do not have permission to modify this note."
 }
 ```
 
-## 3. Delete Note
-**DELETE** `/notes/{id}`
-
-Deletes a specific note by ID.
-
-**Response: `204 No Content`**
-
-## 4. Export Notes (Asynchronous)
-**POST** `/notes/export`
-
-Triggers a background job to export all user notes into a downloadable file. 
-*System Design Note:* This utilizes a message queue for asynchronous processing, decoupling the heavy file generation from user requests to protect overall system throughput and avoid exhausting connection pools.
-
-**Response: `202 Accepted`**
+**404 Not Found**
+Returned when the requested resource (like a specific note ID) does not exist.
 ```json
 {
-  "message": "Export job queued successfully.",
-  "jobId": "exp-98765-abcde",
-  "statusUrl": "/jobs/exp-98765-abcde"
+  "error": "Not Found",
+  "status": 404,
+  "message": "The requested note (ID: 123) could not be found."
+}
+```
+
+**500 Internal Server Error**
+Returned when an unexpected condition was encountered on the server.
+```json
+{
+  "error": "Internal Server Error",
+  "status": 500,
+  "message": "A database connection error occurred. Please try again later."
 }
 ```

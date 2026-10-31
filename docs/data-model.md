@@ -1,31 +1,47 @@
-# QuickNotes Data Model
+**Database Selection Rationale**
+PostgreSQL was selected as the database for this system due to its strong support for relational data integrity and complex querying. Since a note can have multiple tags, and a tag can belong to multiple notes, this system requires a true many-to-many relationship. A relational database like PostgreSQL handles these joins efficiently and enforces strict data consistency through foreign key constraints, which a NoSQL document store would struggle to natively enforce without data duplication.
 
-This document outlines the database schema for the application, designed to support scalable storage and quick retrieval.
+**SQL CREATE TABLE Statements**
+The data model relies on three tables to establish the many-to-many relationship between notes and tags.
 
-## Relational Schema (PostgreSQL)
+```sql
+-- Table to store the main note content
+CREATE TABLE notes (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-### `Users` Table
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `user_id` | UUID | Primary Key | Unique identifier for the user. |
-| `email` | VARCHAR | Unique, Not Null | User's email address. |
-| `created_at` | TIMESTAMP | Not Null | Account creation date. |
+-- Table to store unique tags
+CREATE TABLE tags (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL
+);
 
-### `Notes` Table
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `note_id` | UUID | Primary Key | Unique identifier for the note. |
-| `user_id` | UUID | Foreign Key | References `Users.user_id`. Indexed for fast queries. |
-| `text_content` | TEXT | Not Null | The body of the note. |
-| `category` | VARCHAR | Not Null | Category label (e.g., Personal, Work). |
-| `created_at` | TIMESTAMP | Not Null | Note creation timestamp. |
+-- Junction table modeling the many-to-many relationship
+CREATE TABLE note_tags (
+    note_id INT REFERENCES notes(id) ON DELETE CASCADE,
+    tag_id INT REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (note_id, tag_id)
+);
+```
 
-### `Attachments` Table
-*System Design Note:* Supports the asynchronous thumbnail generation workflow.
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `attachment_id` | UUID | Primary Key | Unique identifier for the file. |
-| `note_id` | UUID | Foreign Key | References `Notes.note_id`. |
-| `original_url` | VARCHAR | Not Null | Object storage URL for the uploaded image. |
-| `thumbnail_url` | VARCHAR | Nullable | Object storage URL for the generated thumbnail. |
-| `size_kb` | INT | Not Null | File size in kilobytes (crucial for accurate daily math and annual storage/egress capacity planning). |
+**Sample Queries with Joins**
+To retrieve a specific note along with all of its associated tags, the backend will execute a query joining all three tables:
+
+```sql
+SELECT 
+    notes.id, 
+    notes.title, 
+    notes.body, 
+    tags.name AS tag_name
+FROM 
+    notes
+LEFT JOIN 
+    note_tags ON notes.id = note_tags.note_id
+LEFT JOIN 
+    tags ON note_tags.tag_id = tags.id
+WHERE 
+    notes.id = 1;
+```

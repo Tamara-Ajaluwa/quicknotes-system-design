@@ -1,32 +1,56 @@
-# QuickNotes System Architecture
+**System Architecture Diagram**
 
-This document outlines the high-level architecture designed to support a read-heavy platform, scaling to handle up to 2,500 peak feed queries per second without exhausting database connection pools or causing latency spikes.
+```text
+[Client / Web Browser]
+        |
+        | (HTTPS / JSON)
+        v
+[Load Balancer]
+        |
+        | (Routes traffic)
+        v
+[API Servers] (Backend Application Logic)
+        |
+        | (SQL Queries / TCP)
+        v
+[PostgreSQL Database] (Relational Data Storage)
+```
 
-## Core Components
+**Step-by-Step Request Flows**
 
-1. **Client Application**
-   * The frontend SPA communicating with the backend via RESTful APIs.
+**Writing a Note (POST)**
+1. The user fills out the note title and body in the client interface and clicks the submit button.
+2. The frontend JavaScript disables the submission button, displays a loading state, and sends an asynchronous `fetch` POST request with the JSON payload to the API server.
+3. The API server validates the incoming payload to ensure all required fields (e.g., title, body) are present and correctly formatted.
+4. The API server executes an SQL `INSERT` statement to save the note into the PostgreSQL `notes` table and assigns a unique ID.
+5. The backend returns a `201 Created` status code along with the newly created note object in JSON format.
+6. The frontend receives the successful response, re-enables the submission button, clears the form, and dynamically injects the new note into the DOM using safe `textContent` manipulation.
 
-2. **API Gateway / Load Balancer**
-   * Routes incoming traffic efficiently across multiple backend instances.
+**Reading Notes (GET)**
+1. The user clicks the "Load Notes" button on the client interface.
+2. The frontend triggers a loading state and sends an asynchronous `fetch` GET request to the API server.
+3. The API server processes the request and executes a `SELECT` query with `LEFT JOIN` operations against the PostgreSQL database to retrieve the notes and their associated tags.
+4. The database returns the result set to the API server, which formats the data into a standardized JSON array.
+5. The API server responds to the client with a `200 OK` status code and the JSON array.
+6. The frontend parses the JSON, clears the existing list, iterates through the array, and safely renders each note to the screen.
 
-3. **Caching Layer**
-   * **Technology:** Redis or Memcached.
-   * **Purpose:** Stores frequently accessed notes and feed queries to drastically reduce latency and protect the database from read spikes. 
+**Formal Load Estimations (1 Million Active Users)**
 
-4. **Database Cluster (Primary & Read Replicas)**
-   * **Primary Database:** Handles all write operations (creating, updating, deleting).
-   * **Read Replicas:** Multiple read-only instances. Because the application is read-heavy, these replicas are essential to prevent connection pool exhaustion. 
-   * *Trade-off:* Users may experience slight replica lag (favoring availability over strict consistency), but system throughput remains protected.
+**Assumptions:**
+* Active Users: 1,000,000
+* Average Reads per user: 10 times per day
+* Average Writes per user: 2 times per day
+* Average Note Size: 2 KB (including metadata, title, and body)
 
-5. **Message Queue**
-   * **Technology:** RabbitMQ, Kafka, or Amazon SQS.
-   * **Purpose:** Enables asynchronous processing, decoupling user requests from system-intensive background tasks.
+**Read Estimations:**
+* Daily Read Requests: 1,000,000 users * 10 reads = 10,000,000 reads/day
+* Average Read Throughput: 10,000,000 / 86,400 seconds = ~115 requests per second (RPS)
 
-6. **Dedicated Thumbnail Worker**
-   * **Purpose:** Consumes upload events from the message queue and generates optimized thumbnails. 
-   * **Capacity Planning:** Accurate unit conversions are necessary here. Processing 1 million thumbnails at 50 KB each amounts to 50 GB per day, accumulating to roughly 18 TB per year. Precise daily math is critical for predicting network egress and storage costs.
+**Write Estimations:**
+* Daily Write Requests: 1,000,000 users * 2 writes = 2,000,000 writes/day
+* Average Write Throughput: 2,000,000 / 86,400 seconds = ~23 requests per second (RPS)
 
-7. **Object Storage**
-   * **Technology:** Amazon S3 or similar.
-   * **Purpose:** Stores the physical attachment files and generated thumbnails, keeping heavy media out of the relational database.
+**Yearly Text Storage Estimations:**
+* Notes Generated Annually: 2,000,000 writes/day * 365 days = 730,000,000 notes/year
+* Raw Storage Required: 730,000,000 notes * 2 KB = 1,460,000,000 KB 
+* Total Estimated Storage: ~1.46 Terabytes (TB) per year (exclusive of database indexing overhead and backups).

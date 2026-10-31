@@ -3,41 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickNotes</title>
-    <link rel="stylesheet" href="style.css">
+    <title>QuickNotes API Version</title>
+    <style>
+        /* Basic styling to keep the layout clean */
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        input, textarea { width: 100%; padding: 0.5rem; margin-top: 0.25rem; box-sizing: border-box; }
+        button { padding: 0.5rem 1rem; cursor: pointer; margin-right: 0.5rem; }
+        #status-display { margin: 1rem 0; font-weight: bold; min-height: 1.5em; }
+        .note-card { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; list-style: none; }
+        .delete-btn { background-color: #ff4444; color: white; border: none; margin-top: 1rem; }
+        ul { padding-left: 0; }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>QuickNotes</h1>
-        <!-- Project 1 Feedback Fix: Added an application tagline -->
-        <p>Capture your thoughts, anytime, anywhere.</p>
-    </header>
+    <h1>QuickNotes</h1>
 
-    <main>
-        <input type="text" id="search-input" placeholder="Search notes by keyword...">
-        <p id="note-count">0 notes</p>
+    <!-- 1. The required Network Status Display -->
+    <div id="status-display"></div>
 
-        <form id="note-form">
-            <label for="note-input">Note Title / Body:</label>
-            <!-- Project 1 Feedback Fix: Removed the 'required' attribute to allow custom validation -->
-            <input type="text" id="note-input" placeholder="Enter your note...">
-            
-            <label for="note-category">Category:</label>
-            <input type="text" id="note-category" placeholder="e.g., Personal, Work, Bucket Lists">
-            
-            <p id="error-message"></p>
-            
-            <button type="submit" id="submit-btn">Add Note</button>
-        </form>
+    <!-- 2. The required Load Button -->
+    <button id="load-btn">Load Notes</button>
 
-        <ul id="notes-list"></ul>
-    </main>
+    <hr style="margin: 2rem 0;">
 
-    <footer>
-        <p>&copy; 2026 QuickNotes System Design</p>
-    </footer>
+    <!-- 3. The Form with Title and Body separation -->
+    <form id="note-form">
+        <div class="form-group">
+            <label for="note-title">Note Title</label>
+            <input type="text" id="note-title" placeholder="Enter title...">
+        </div>
+        
+        <div class="form-group">
+            <label for="note-body">Note Body</label>
+            <textarea id="note-body" rows="4" placeholder="Enter note details..."></textarea>
+        </div>
 
-    <!-- Scripts are loaded at the bottom for performance -->
+        <button type="submit" id="submit-btn">Add Note</button>
+    </form>
+
+    <hr style="margin: 2rem 0;">
+
+    <!-- 4. The List where notes will be rendered -->
+    <ul id="notes-list"></ul>
+
+    <!-- Link to your newly refactored JavaScript file -->
     <script src="api.js"></script>
 </body>
 </html>
