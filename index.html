@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickNotes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>QuickNotes</h1>
+        <!-- Project 1 Feedback Fix: Added an application tagline -->
+        <p>Capture your thoughts, anytime, anywhere.</p>
+    </header>
+
+    <main>
+        <input type="text" id="search-input" placeholder="Search notes by keyword...">
+        <p id="note-count">0 notes</p>
+
+        <form id="note-form">
+            <label for="note-input">Note Title / Body:</label>
+            <!-- Project 1 Feedback Fix: Removed the 'required' attribute to allow custom validation -->
+            <input type="text" id="note-input" placeholder="Enter your note...">
+            
+            <label for="note-category">Category:</label>
+            <input type="text" id="note-category" placeholder="e.g., Personal, Work, Bucket Lists">
+            
+            <p id="error-message"></p>
+            
+            <button type="submit" id="submit-btn">Add Note</button>
+        </form>
+
+        <ul id="notes-list"></ul>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 QuickNotes System Design</p>
+    </footer>
+
+    <!-- Scripts are loaded at the bottom for performance -->
+    <script src="api.js"></script>
+</body>
+</html>
